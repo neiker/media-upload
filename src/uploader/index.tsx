@@ -1,76 +1,73 @@
 import * as React from 'react';
 import { useDropzone } from 'react-dropzone';
-import axios from 'axios';
 
 import './index.css';
+
 import { FilePreview } from './FilePreview';
+import { useFileState } from './FileState';
 
-function fileUpload(file: File) {
-    const url = 'http://example.com/file-upload';
-    const formData = new FormData();
-    formData.append('file',file)
-    const config = {
-        headers: {
-            'content-type': 'multipart/form-data'
-        }
+export const Uploader: React.FunctionComponent<{ accept?: string }> = ({
+  accept,
+}) => {
+  const {
+    state: { file, progress, compression },
+    setProgress,
+    setFile,
+    reset,
+    setCompression,
+  } = useFileState();
+
+  React.useEffect(() => {
+    // Fake progress
+    if (progress !== undefined && progress < 100) {
+      setTimeout(() => {
+        setProgress(progress + 1);
+      }, 100 - (progress % 100));
     }
-    return axios.post(url, formData,config)
-}
-
-export const Uploader = () => {
-  const [file, setFile] = React.useState<File>();
-
-  const onChangeHandler = React.useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      console.log('onChangeHandler', event);
-    },
-    [],
-  );
+  }, [progress, setProgress]);
 
   const onSubmit = React.useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      console.log('onSubmit', event);
+
+      setProgress(0);
     },
-    [],
+    [setProgress],
   );
 
-  const onReset = React.useCallback(() => {
-    setFile(undefined);
-  }, [])
-
-  const onDrop = React.useCallback((acceptedFiles: File[]) => {
-    setFile(acceptedFiles[0]);
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: 'video/mp4,video/x-m4v,image/png,image/jpeg,image/gif',
+  const {
+    getRootProps,
+    getInputProps,
+    isDragReject,
+    isDragAccept,
+  } = useDropzone({
+    onDrop: (acceptedFiles: File[]) => {
+      setFile(acceptedFiles[0]);
+    },
+    accept,
   });
-  
+
   return (
-    <form 
-      onSubmit={onSubmit} 
-      onReset={onReset}
-      className="media-uploader"
-    >
+    <form onSubmit={onSubmit} onReset={reset} className="media-uploader">
       {!file ? (
         <div
           {...getRootProps()}
-          className={`media-uploader-drop-area ${isDragActive ? 'active' : ''}`}
+          className={`media-uploader-drop-area ${
+            isDragAccept ? 'accept' : ''
+          } ${isDragReject ? 'reject' : ''}`}
         >
           <h3>Drag files here to upload </h3>
-          <h3>or browse for files</h3>
+          <h3 style={{ color: 'blue' }}>or browse for files</h3>
 
-          <input
-            type="file"
-            name="file"
-            onChange={onChangeHandler}
-            {...getInputProps()}
-          />
+          <input type="file" name="file" {...getInputProps()} />
         </div>
       ) : (
-        <FilePreview file={file} />
+        <FilePreview
+          file={file}
+          progress={progress}
+          compression={compression}
+          setCompression={setCompression}
+        />
       )}
     </form>
   );
