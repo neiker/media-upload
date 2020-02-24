@@ -59,7 +59,6 @@ export const FilePreview: React.FunctionComponent<{
             />
           </div>
         </div>
-  
 
         <div className="preview-footer">
           <button disabled={progress !== undefined} type="reset">Reset</button>
